@@ -1,5 +1,7 @@
 pragma solidity ^0.4.21;
 contract AcademicService {
+    
+event GradeUpdate(address _from, string _message, address _student);
 
  //a student not yet available has grade = -1
  struct Course {
@@ -37,17 +39,16 @@ contract AcademicService {
  }
 
  function assignProfessor(uint8 courseId, address professor) public {
- if(msg.sender == school && courseId > 0 &&
+ if(msg.sender == school && courseId >= 0 &&
  courseId < courses.length &&
- courses[courseId].professor != 0 &&
- now < (start + 1 weeks)) {
+ now < (start + 2 days)) {
 
  courses[courseId].professor = professor;
  }
  }
  function registerNewStudent(address studentAddress) public {
- if(msg.sender == school && now < (start + 4 weeks) &&
- students[studentAddress] == ) {
+ if(msg.sender == school && now < (start + 1 weeks) &&
+ students[studentAddress].student != studentAddress  ){
 
  students[studentAddress] = Student(studentAddress,0,0);
  }
@@ -55,23 +56,82 @@ contract AcademicService {
 
  function registerOnCourse(uint8 courseId) public payable {
  uint256 cost;
- if(courseId > 0 && courseId < courses.length) {
- if(students[msg.sender].registeredCredits >= 60) {
- cost = courses[courseId].credits*(0.1 ether);
- } else {
- cost = (courses[courseId].credits -
- (60-students[msg.sender].registeredCredits))*
- (0.1 ether);
+ if(courseId >= 0 && courseId < courses.length &&  now < (start + 2 weeks) && students[msg.sender].student == msg.sender) {
+    if(students[msg.sender].registeredCredits + courses[courseId].credits <= 18) {
+        cost = 0;
+     } else {
+       cost = courses[courseId].credits*(0.001 ether);
+    } 
+
+    if(cost <= 0 || msg.value >= cost) {
+        courses[courseId].grades[msg.sender] = -1;
+        students[msg.sender].registeredCredits += courses[courseId].credits;
+
+        school.transfer(cost);
+    }
+    }
  }
 
- if(cost <= 0 || msg.value >= cost) {
- courses[courseId].grades[msg.sender] = -1;
- students[msg.sender].registeredCredits +=
- courses[courseId].credits;
+function unregisterFromCourse(uint8 courseId) public payable {
+     uint256 cost;
+    if(courseId >= 0 && courseId < courses.length &&  now < (start + 4 weeks)) {
+        if(students[msg.sender].registeredCredits - courses[courseId].credits >= 18) {
+            cost = courses[courseId].credits*(0.001 ether);
+        } else {
+            cost = 0;
+        
+    } 
 
- school.transfer(cost);
- }
- }
- }
+    if(cost <= 0 || msg.value >= cost) {
+        courses[courseId].grades[msg.sender] = -2;
+        students[msg.sender].registeredCredits -= courses[courseId].credits;
+
+        students[msg.sender].student.transfer(cost);
+    }
+    }
+    }
+    
+    
+function assignGrade(uint8 grade, address studentAddress, uint8 courseId) public{
+    
+    if(grade >= 0 && grade <= 20 && courses[courseId].professor == msg.sender){
+        courses[courseId].grades[studentAddress] = grade;
+        emit GradeUpdate(msg.sender, "new grades was assigned to ",studentAddress);
+        
+        if(grade >= 10){
+            students[studentAddress].approvedCredits += courses[courseId].credits;
+        }
+        if(students[studentAddress].approvedCredits >= 15)
+            emit AcquiredDegree(studentAddress);
+    }
+    
+
+    
+}
+
+function specialEvaluation(uint8 courseId) public payable{
+    uint256 cost;
+    if(courses[courseId].grades[msg.sender] < 10){
+        cost = 0.005 ether;
+        school.transfer(cost);
+        
+        
+    }
+}
+//ALYSOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOON CRL
+function acceptSpecialEvaluation(uint8 courseId, address studentAddress, uint8 newGrade) public payable{
+    
+    if(courses[courseId].professor == msg.sender){
+        courses[courseId].grades[studentAddress] = newGrade;
+        school.transfer(0.001 ether);
+        
+        if(newGrade >= 10){
+            students[studentAddress].approvedCredits += courses[courseId].credits;
+        }
+        if(students[studentAddress].approvedCredits >= 15)
+            emit AcquiredDegree(studentAddress);
+    }
+}
+
 
 }
