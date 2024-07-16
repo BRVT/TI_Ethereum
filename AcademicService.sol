@@ -118,7 +118,7 @@ function specialEvaluation(uint8 courseId) public payable{
         
     }
 }
-//ALYSOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOON CRL
+
 function acceptSpecialEvaluation(uint8 courseId, address studentAddress, uint8 newGrade) public payable{
     
     if(courses[courseId].professor == msg.sender){
